@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Wave Gold Simulation</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f4;
+        color: #333;
+        padding: 20px;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+      }
+
+      table,
+      th,
+      td {
+        border: 1px solid #ddd;
+      }
+
+      th,
+      td {
+        padding: 8px;
+        text-align: center;
+      }
+
+      th {
+        background-color: #4caf50;
+        color: white;
+      }
+
+      .controls {
+        margin-bottom: 20px;
+      }
+
+      .controls label {
+        margin-right: 10px;
+      }
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        border: 0;
+      }
+    </style>
+  </head>
+
+  <body>
+    <h1>금고 시뮬레이션</h1>
+    <div class="controls">
+      <label
+        >초기골드: <input type="number" id="initialGold" value="180"
+      /></label>
+      <label>웨이브: <input type="number" id="waves" value="80" /></label>
+      <label
+        >금고 레벨: <input type="number" step="" id="level" value="7"
+      /></label>
+      <label class="sr-only"
+        >산적 :
+        <input type="number" step="0.01" id="thiefProbability" value="0.05"
+      /></label>
+      <label
+        >산적 공격 속도:
+        <input type="number" step="0.1" id="thiefAttackRate" value="2.4"
+      /></label>
+      <label class="sr-only"
+        >한 웨이브 진행 시간: <input type="number" id="waveDuration" value="20"
+      /></label>
+      <label
+        >시작 산적 개수: <input type="number" id="numThieves" value="3"
+      /></label>
+      <label
+        >산적 판매 웨이브: <input type="number" id="sellWave" value="40"
+      /></label>
+      <label class="sr-only"
+        >웨이브 당 적의 수: <input type="number" id="enemiesPerWave" value="40"
+      /></label>
+      <label class="sr-only"
+        >10웨이브 이전 킬당 획득 골드:
+        <input type="number" id="goldPerEnemyWave1_10" value="1"
+      /></label>
+      <label class="sr-only"
+        >10웨이브 이후 킬당 획득 골드:
+        <input type="number" id="goldPerEnemyWave11Up" value="2"
+      /></label>
+      <button onclick="updateGoldTable()">계산</button>
+    </div>
+    <table id="goldTable">
+      <thead>
+        <tr>
+          <th>Wave</th>
+          <th>Gold</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Rows will be dynamically populated by JavaScript -->
+      </tbody>
+    </table>
+
+    <script>
+      function calculateGoldByWave(
+        initialGold,
+        waves,
+        level,
+        thiefProbability,
+        thiefAttackRate,
+        waveDuration,
+        numThieves,
+        sellWave,
+        enemiesPerWave,
+        goldPerEnemyWave1_10,
+        goldPerEnemyWave11Up
+      ) {
+        let additionalBonusByWave = { 3: 250, 6: 100, 4: 100, 10: 50 };
+        const cumulativeBonusThreshold = 1000;
+        const cumulativeBonusAmount = 50;
+        let cumulativeBonusAcquired = false;
+
+        let goldByWave = [initialGold];
+        for (let wave = 1; wave <= waves; wave++) {
+          let currentGold =
+            goldByWave[wave - 1] * (1 + (level - 1) * 0.005 + 0.05);
+          let enemyGold =
+            wave <= 10
+              ? enemiesPerWave * goldPerEnemyWave1_10
+              : enemiesPerWave * goldPerEnemyWave11Up;
+          currentGold += enemyGold;
+
+          if (wave >= 3 && wave <= sellWave) {
+            let thiefGold =
+              numThieves *
+              thiefAttackRate *
+              waveDuration *
+              thiefProbability *
+              10;
+            currentGold += thiefGold;
+          }
+
+          if (additionalBonusByWave[wave]) {
+            currentGold += additionalBonusByWave[wave];
+          }
+
+          if (
+            currentGold > cumulativeBonusThreshold &&
+            !cumulativeBonusAcquired
+          ) {
+            currentGold += cumulativeBonusAmount;
+            cumulativeBonusAcquired = true;
+          }
+
+          goldByWave.push(currentGold);
+        }
+        return goldByWave;
+      }
+
+      function updateGoldTable() {
+        const initialGold = parseFloat(
+          document.getElementById("initialGold").value
+        );
+        const waves = parseInt(document.getElementById("waves").value);
+        const level = parseFloat(document.getElementById("level").value);
+        const thiefProbability = parseFloat(
+          document.getElementById("thiefProbability").value
+        );
+        const thiefAttackRate = parseFloat(
+          document.getElementById("thiefAttackRate").value
+        );
+        const waveDuration = parseInt(
+          document.getElementById("waveDuration").value
+        );
+        const numThieves = parseInt(
+          document.getElementById("numThieves").value
+        );
+        const sellWave = parseInt(document.getElementById("sellWave").value);
+        const enemiesPerWave = parseInt(
+          document.getElementById("enemiesPerWave").value
+        );
+        const goldPerEnemyWave1_10 = parseInt(
+          document.getElementById("goldPerEnemyWave1_10").value
+        );
+        const goldPerEnemyWave11Up = parseInt(
+          document.getElementById("goldPerEnemyWave11Up").value
+        );
+
+        const goldData = calculateGoldByWave(
+          initialGold,
+          waves,
+          level,
+          thiefProbability,
+          thiefAttackRate,
+          waveDuration,
+          numThieves,
+          sellWave,
+          enemiesPerWave,
+          goldPerEnemyWave1_10,
+          goldPerEnemyWave11Up
+        );
+        const tbody = document
+          .getElementById("goldTable")
+          .getElementsByTagName("tbody")[0];
+        tbody.innerHTML = "";
+
+        for (let wave = 1; wave <= goldData.length - 1; wave++) {
+          const row = document.createElement("tr");
+          const waveCell = document.createElement("td");
+          const goldCell = document.createElement("td");
+
+          waveCell.textContent = wave;
+          goldCell.textContent = goldData[wave].toFixed(2);
+
+          row.appendChild(waveCell);
+          row.appendChild(goldCell);
+          tbody.appendChild(row);
+        }
+      }
+
+      document.addEventListener("DOMContentLoaded", function () {
+        updateGoldTable();
+      });
+    </script>
+  </body>
+</html>
